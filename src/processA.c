@@ -5,6 +5,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+/*
+Simply moving the circle in ncurces window which moves the 20x bigger circle in the 
+shared memory.
+Keep updating the circle in bitmap when movements occur in ncurces window of the processA
+*/
+
 int main(int argc, char *argv[])
 {
     // Utility variable to avoid trigger resize event on launch
@@ -29,8 +35,8 @@ int main(int argc, char *argv[])
     *   - Height of the image (in pixels)
     *   - Depth of the image (1 for greyscale images, 4 for colored images)
     */
-    int width = 100;
-    int height = width;
+    int width = 1600;
+    int height = 600;
     int depth = 4;
     bmp = bmp_create(width, height, depth);
 
@@ -39,12 +45,12 @@ int main(int argc, char *argv[])
     for(int x = -radius; x <= radius; x++) {
                 for(int y = -radius; y <= radius; y++) {
                     // If distance is smaller, point is within the circle
-                    if(sqrt(x*x + y*y) < radius) {
+                    if(sqrt(((x-10)*x) + (y*y) < radius)) {
                         /*
                         * Color the pixel at the specified (x,y) position
                         * with the given pixel values
                         */
-                        bmp_set_pixel(bmp, width/2 + x, height/2 + y, pixel);
+                        bmp_set_pixel(bmp, width/4 + x, height/10 + y, pixel);
                     }
                 }
             }
@@ -91,7 +97,7 @@ int main(int argc, char *argv[])
         }
         
     }
-    
+
     endwin();
     return 0;
 }
