@@ -27,7 +27,9 @@ int spawn(const char * program, char * arg_list[]) {
 
 int main() {
 
-  char * arg_list_A[] = { "/usr/bin/konsole", "-e", "./bin/processA", NULL };
+
+
+  char * arg_list_A[] = { "/usr/bin/konsole", "-e", "./bin/processA", NULL};
   char * arg_list_B[] = { "/usr/bin/konsole", "-e", "./bin/processB", NULL };
 
   pid_t pid_procA = spawn("/usr/bin/konsole", arg_list_A);
