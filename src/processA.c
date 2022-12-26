@@ -11,6 +11,8 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+
+#define NAME "out/NEW"
 /*
 Simply moving the circle in ncurces window which moves the 20x bigger circle in the 
 shared memory.
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 
     
     // Data type for defining pixel colors (BGRA)
-    rgb_pixel_t pixel = {0, 0, 255, 0};
+    //rgb_pixel_t pixel = {0, 0, 255, 0};
        
     bmp = bmp_create(width, height, depth);
     init_width = width/2;
@@ -107,7 +109,7 @@ int main(int argc, char *argv[])
                 if(check_button_pressed(print_btn, &event)) {
                     mvprintw(LINES - 1, 1, "Print button pressed");
                     // Save image as .bmp file
-                    bmp_save(bmp, "out/new.bmp");
+                    bmp_save(bmp, NAME);
                     refresh();
                     sleep(1);
                     for(int j = 0; j < COLS - BTN_SIZE_X - 2; j++) {
