@@ -58,8 +58,150 @@ void draw_newCircle(){
                     }
 }
 
+#define radius 30
+
+// Typedef for circle center
+typedef struct {
+    int x,y;
+}coordinate;
+
+ /* Instantiate bitmap, passing three parameters:
+    *   - width of the image (in pixels)
+    *   - Height of the image (in pixels)
+    *   - Depth of the image (1 for greyscale images, 4 for colored images)
+*/
+// Data type for defining pixel colors (BGRA)
+rgb_pixel_t pixel_w = {255, 255, 255, 0};
+
+// draw a circle in the center (cx,cy) for a bitmap
+void circle_draw(int cx, int cy, bmpfile_t *bmp){
+  for(int x = -radius; x <= radius; x++) {
+    for(int y = -radius; y <= radius; y++) {
+      // If distance is smaller, point is within the circle
+      if(sqrt(x*x + y*y) < radius) {
+          /*
+          * Color the pixel at the specified (x,y) position
+          * with the given pixel values
+          */
+          bmp_set_pixel(bmp, cx + x, cy + y, pixel);
+      }
+    }
+  }
+}
+
+// draw a circle for the shared memory
+void circle_drawAOS(bmpfile_t *bmp, rgb_pixel_t *ptr){
+
+    rgb_pixel_t* p;
+    
+    for(int i = 0; i < height; i++){
+      for(int j = 0; j < width; j++){
+
+        p = bmp_get_pixel(bmp,j,i);
+
+        
+        ptr[i+j*height].alpha = p->alpha;
+        ptr[i+j*height].blue = p->blue;
+        ptr[i+j*height].green = p->green;
+        ptr[i+j*height].red = p->red;
+
+      }
+    }
+
+}
+
+
+// delete the old circle by colouring everything white for the bitmap
+void delete(int cx, int cy, bmpfile_t *bmp){
+  for(int x = -radius; x <= radius; x++) {
+    for(int y = -radius; y <= radius; y++) {
+      // If distance is smaller, point is within the circle
+      if(sqrt(x*x + y*y) < radius) {
+          /*
+          * Color the pixel at the specified (x,y) position
+          * with the given pixel values
+          */
+          bmp_set_pixel(bmp, cx + x, cy + y, pixel_w);
+      }
+    }
+  }
+}
+
+// delete the old circle by colouring everything white in the shared memory
+void deleteAOS(rgb_pixel_t *ptr){
+    
+    for(int i = 0; i < height; i++){
+      for(int j = 0; j < width; j++){
+        ptr[i+j*height].alpha = pixel_w.alpha;
+        ptr[i+j*height].blue = pixel_w.blue;
+        ptr[i+j*height].green = pixel_w.green;
+        ptr[i+j*height].red = pixel_w.red;
+      }
+    }
+}
+
+// function to find the center of the shared memory
+coordinate find_center(bmpfile_t *bmp, rgb_pixel_t *ptr){
+  
+        int first = 0, last = 0;
+
+        char msg[100];
+
+        coordinate center;
+
+        sprintf(msg," AHAHAHAH loooosers");
+
+         for(int i = 0; i < height; i++){
+          for(int j = 0; j < width; j++){
+             if(ptr[i+j*height].blue == pixel.blue && first == 0){
+              first = j;
+             }
+             if(ptr[i+j*height].blue != pixel.blue && first != 0){
+              last = j-1;
+              break;
+             }
+      }
+
+      if(last - first == 2*radius){
+                center.x = (last-first)/2; // cx
+                center.y = i; // cy
+
+                sprintf(msg," AHAHAHAH first %d last %d", first, last);
+                sprintf(msg," AHAHAHAH cx %d cy %d", center.x,center.y);
+                //file_logG("./logs/prova.txt", msg);
+
+                break;
+            }
+      first = 0;
+      last = 0;
+    }
+    circle_draw(center.x,center.y,bmp);
+
+    return center;
+
+}
+
 int main(int argc, char *argv[])
 {
+    // instantiation of the shared memory
+    const char * shm_name = "/AOS";
+    const int SIZE = width*height*sizeof(rgb_pixel_t);
+    int shm_fd;
+    rgb_pixel_t* ptr;
+    shm_fd = shm_open(shm_name, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == 1) {
+        printf("Shared memory segment failed\n");
+        exit(1);
+    }
+
+    ftruncate(shm_fd,SIZE);
+
+    ptr = (rgb_pixel_t *)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        printf("Map failed\n");
+        return 1;
+    }
+
     // Utility variable to avoid trigger resize event on launch
     int first_resize = TRUE;
 
@@ -67,25 +209,26 @@ int main(int argc, char *argv[])
     init_console_ui();
 
     
-    // Data type for defining pixel colors (BGRA)
-    //rgb_pixel_t pixel = {0, 0, 255, 0};
-       
-    bmp = bmp_create(width, height, depth);
-    init_width = width/2;
-    init_height = height / 2;
-    new_width = init_width;
-    new_height = init_height;
+   // variable to name the copies of the bitmap saved from time to time
+    int val = 0;
 
-    // Code for drawing a centered circle of given radius...
-    radius = atoi("30");
-    for(int x = -radius; x <= radius; x++) {
-                for(int y = -radius; y <= radius; y++) {
-                    // If distance is smaller, point is within the circle
-                    if(sqrt(((x-10)*x) + (y*y) < radius)) {
-                        bmp_set_pixel(bmp, init_width + x, init_height + y, pixel);
-                    }
-                }
-            }
+    // variable to store the old center of the circle (delete function)
+    int cx = width/2, cy = height/2;
+
+    // variable to name the bitmap file to be saved
+    char msg[100];
+
+    // Initialize UI
+    init_console_ui();
+
+    // Data structure for storing the bitmap file
+    bmpfile_t *bmp;
+    
+    bmp = bmp_create(width, height, depth);
+
+    circle_draw(cx,cy,bmp);
+    bmp_save(bmp, NAME);
+    circle_drawAOS(bmp, ptr); 
     
     // Infinite loop
     while (TRUE)
@@ -123,37 +266,16 @@ int main(int argc, char *argv[])
         else if(cmd == KEY_LEFT || cmd == KEY_RIGHT || cmd == KEY_UP || cmd == KEY_DOWN) {
             move_circle(cmd);
             draw_circle();
-            switch (cmd)
-            {
-                case KEY_LEFT:
-                    rmv_prevCircle();
-                    new_width = new_width - shift;
-                    draw_newCircle();
-                    break;
-                case KEY_RIGHT:
-                    rmv_prevCircle();
-                    new_width = new_width + shift;
-                    draw_newCircle();
-                    break;
-                case KEY_UP:
-                    rmv_prevCircle();
-                    new_height = new_height - shift;
-                    draw_newCircle();
-                    break;
-                case KEY_DOWN:
-                    rmv_prevCircle();
-                    new_height = new_height + shift;
-                    draw_newCircle();
-                    break;
-                default:
-                    break;
-            }
+            delete(cx,cy,bmp);
+            deleteAOS(ptr);
+            cx = circle.x*20;
+            cy = circle.y*20;
+            circle_draw(cx,cy,bmp);
+            circle_drawAOS(bmp,ptr);
         }
         
     }
 
-    // Free resources before termination
-    bmp_destroy(bmp);
     endwin();
     return 0;
 }
