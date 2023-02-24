@@ -181,6 +181,7 @@ coordinate find_center(bmpfile_t *bmp, rgb_pixel_t *ptr){
 
 }
 
+// Main Functions
 int main(int argc, char *argv[])
 {
     // instantiation of the shared memory
